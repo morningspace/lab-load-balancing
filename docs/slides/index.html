@@ -152,6 +152,7 @@
               </section>
               <section data-markdown>
                 ## Enable Logging using UDP
+                * For performance and maintenance reasons, HAProxy doesn't log directly to files. It logs against syslog server.
                 * Open */etc/haproxy/haproxy.cfg* to ensure the following line is defined under *global* section.
 
                 ```

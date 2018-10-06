@@ -201,3 +201,9 @@ Wait for a moment then check the keepalived logs. See if `mylb1` gained `MASTER`
 You can also verify it using `ip` command in both containers, to see if the virtual IP address appeared in the output in container `mylb1` instead of container `mylb2`.
 
 Run `curl` in either of the two load balancer containers. Send request to the virutal IP and see if it still returns the content retrieved from web servers.
+
+## Troubleshooting
+
+* Add `tune.ssl.default-dh-param 2048` if met "[WARNING] 277/024013 (214) : Setting tune.ssl.default-dh-param to 1024 by default, if your workload permits it you should set it to at least 2048. Please set a value >= 1024 to make this warning disappear."
+
+* Run `service rsyslog restart` if met "[ALERT] 277/004806 (177) : sendmsg logger #1 failed: No such file or directory (errno=2)"
