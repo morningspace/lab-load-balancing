@@ -1,0 +1,706 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Load Balancing Using HAProxy and Keepalived</title>
+
+    <link rel="shortcut icon" href="https://www.haproxy.org/favicon.ico" />
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/black.css">
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css';
+        document.getElementsByTagName('head')[0].appendChild(link);
+    </script>
+</head>
+
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section data-markdown>
+              ## Load Balancing Using
+              ## HAProxy and Keepalived
+              by Mo Ying
+
+              Sep, 2018
+            </section>
+            <section>
+              <section data-markdown>
+                ## HAProxy Overview
+              </section>
+              <section data-markdown>
+                ## High availability
+                * A function of system design allowing application to auto restart or reroute to another capable system in the event of a failure.
+                   * A component can redirect the work
+                   * A mechanism can monitor failure and transition the system when detects interruption.
+              </section>
+              <section data-markdown>
+                ## What is HAProxy?
+                * HAProxy is an open source application used as TCP/HTTP Load Balancer and for proxy solutions.
+                * It can distribute the workload across multiple server instances thus improving the overall performance and reliability.
+              </section>
+              <section data-markdown>
+                ## TCP vs. HTTP
+                * In TCP layer(4) mode, HAProxy simply forwards bidirectional traffic between two sides.
+                * In HTTP layer(7) mode, HAProxy analyzes the protocol, and can interact with it by allowing, blocking, switching, adding, modifying, or removing arbitrary contents in requests or responses, based on arbitrary criteria.
+              </section>
+            </section>
+            <section>
+              <section data-markdown>
+                ## HAProxy Installation
+              </section>
+              <section data-markdown>
+                ## How to Install
+                * Install by package manager
+                * Install from source
+                * Ensure your HAProxy version is >= 1.5 if need SSL access as SSL is natively supported since HAProxy 1.5.
+              </section>
+              <section data-markdown>
+                ## By Package Manager
+                * For most modern Linux distributions, HAProxy can be easily installed from the default base repository using default package manager.
+
+                ```shell
+                RedHat, CentOS, Fedora, etc.
+                # yum update
+                # yum install haproxy
+
+                Debian, Ubuntu, etc.
+                # apt-get update
+                # apt-get install haproxy
+                    
+                MacOS
+                # brew install haproxy
+                ```
+              </section>
+              <section data-markdown>
+                ## From Source
+                * See: https://github.com/docker-library/haproxy
+              </section>
+              <section data-markdown>
+                ## Validate
+                * To ensure where the HAProxy is installed, run below command:
+
+                ```shell
+                # which haproxy
+                /usr/sbin/haproxy
+                ```
+                * To ensure what the version of the installed HAProxy is, run below command:
+
+                ```shell
+                # haproxy -v
+                HA-Proxy version 1.5.18 2016/05/10
+                Copyright 2000-2016 Willy Tarreau &lt;willy@haproxy.org>
+                ```
+              </section>
+              <section data-markdown>
+                ## Auto Start
+                * Configure HAProxy as a service that can be auto started after reboot.
+                * Enable but not activate. We will configure HAProxy before start it.
+              </section>
+              <section data-markdown>
+                ## By systemd
+                * To ensure HAProxy service has functional systemd init script, check */etc/systemd/system/multi-user.target.wants/haproxy.service*
+                * To enable the service, run below command:
+
+                ```shell
+                # systemctl enable haproxy.service
+                ```
+                * To reload systemd daemon and reflect the changes, run below command:
+
+                ```shell
+                # systemctl daemon-reload
+                ```
+                * To ensure the service has been enabled, check its status by running below command:
+                
+                ```shell
+                # service haproxy status
+                ```
+              </section>
+            </section>
+            <section>
+              <section data-markdown>
+                ## HAProxy Configuration
+              </section>
+              <section data-markdown>
+                ## Configuration Basics
+                * *defaults* section sets default parameters for all other sections following its declaration.
+                * *frontend* section describes a set of listening sockets accepting client connections.
+                * *backend* section describes a set of servers to which the proxy will connect to forward incoming connections.
+                * *listen* section defines a complete proxy with its frontend and backend parts combined in one section. It is generally useful for TCP-only traffic.
+              </section>
+              <section data-markdown>
+                ## Backup haproxy.cfg
+                * Backup the original sample configuration file at */etc/haproxy*:
+
+                ```shell
+                # cp /etc/haproxy/haproxy.cfg{,.old}
+                ```
+              </section>
+              <section data-markdown>
+                ## Enable Logging
+                * Open */etc/haproxy/haproxy.cfg* to ensure the following line is defined under *global* section.
+
+                ```
+                log         127.0.0.1 local2
+                ```
+                * To enable UDP syslog reception in */etc/rsyslog.conf*, open *rsyslog.conf* and uncomment the following lines:
+
+                ```
+                # Provides UDP syslog reception
+                $ModLoad imudp
+                $UDPServerRun 514
+                ```
+              </section>
+              <section data-markdown>
+                ## Enable Logging
+                * Create *haproxy.conf* under */etc/rsyslog.d/* and append the following line to the file:
+
+                ```
+                local2.*        /var/log/haproxy.log
+                ```
+                * To restart the rsyslog service and reflect the changes, run below command:
+
+                ```shell
+                # service rsyslog restart
+                ```
+                * To monitor the log for debugging purpose, run below command:
+                
+                ```shell
+                # tail -f /var/log/haproxy.log
+                ```
+              </section>
+              <section data-markdown>
+                ## Enable Logging on Mac OS
+                * For OS X 10.11+, you need to disable Apple System Integrity Protection(SIP) at first.
+                  * Reboot into recovery mode (reboot and hold down Cmd-R)
+                  * Open a terminal
+                  * Run *csrutil disable*
+                  * Reboot
+                * It is highly recommended to re-enable SIP by running *csrutil enable* after you enable logging.
+              </section>
+              <section data-markdown>
+                ## Enable Logging on Mac OS
+                * Change syslogd startup procedure to include its network listener.
+                * Backup syslogd startup file:
+
+                ```shell
+                # cd /System/Library/LaunchDaemons
+                # sudo cp com.apple.syslogd.plist{,.old}
+                ```
+                * Convert the file in binary format to xml to be human readable:
+
+                ```shell
+                # sudo plutil -convert xml1 com.apple.syslogd.plist
+                ```
+              </section>
+              <section data-markdown>
+                ## Enable Logging on Mac OS
+                * Add the following snippet under *Sockets* node then save the file:
+
+                ```xml
+                &lt;key>NetworkListener&lt;/key>
+                &lt;dict>
+                  &lt;key>SockServiceName&lt;/key>
+                  &lt;string>syslog&lt;/string>
+                  &lt;key>SockType&lt;/key>
+                  &lt;string>dgram&lt;/string>
+                &lt;/dict>
+                ```
+                * Convert the file from xml back to binary, run below command:
+
+                ```shell
+                # sudo plutil -convert binary1 com.apple.syslogd.plist
+                ```
+              </section>
+              <section data-markdown>
+                ## Enable Logging on Mac OS
+                * Restart syslogd to reflect the change, run below commands:
+
+                ```shell
+                # sudo launchctl unload com.apple.syslogd.plist
+                # sudo launchctl load com.apple.syslogd.plist
+                ```
+                * Add the following entry to */etc/syslog.conf* for HAProxy logging:
+
+                ```
+                local2.* /var/log/haproxy.log
+                ```
+              </section>
+              <section data-markdown>
+                ## Enable stats
+                * Add below *listen* section to enable the HAProxy statistic page:
+                
+                ```
+                listen stats
+                  bind 0.0.0.0:8081
+                  mode http
+                  stats enable
+                  stats uri /haproxy/stats
+                  stats realm Haproxy\ Statistics
+                  stats auth haproxy:Passw0rd  
+                ```
+              </section>
+              <section data-markdown>
+                ## Simple Frontend and Backend
+                * Configure an HTTP endpoint and bind to a certain port as frontend.
+                * Configure backend servers with their IP addresses and ports
+                * Use balance option to specifiy the balance algorithm, e.g. roundrobin
+
+                ```
+                frontend http-in
+                  bind *:8080
+                  default_backend app
+
+                backend app
+                  balance roundrobin
+                  server  srv1 &lt;srv1_ip>:&lt;srv1_port>
+                  server  srv2 &lt;srv2_ip>:&lt;srv2_port>
+                  server  srv3 &lt;srv3_ip>:&lt;srv3_port>
+                ```
+              </section>
+              <section data-markdown>
+                ## Enable SSL
+                * SSL Termination
+                  * To have HAProxy handle the SSL connection.
+                  * To have the SSL Certificate live on HAProxy server.
+                * SSL Pass-Through
+                  * To have backend servers, rather than HAProxy, handle the SSL connection.
+                  * HAProxy simply proxies request off to backend servers.
+                  * Make the network transportation more efficient.
+                  * But, HAProxy can't do anything with the request other than redirect it because the connection remains encrypted.
+              </section>
+              <section data-markdown>
+                ## SSL Pass-Through
+              </section>
+              <section data-markdown>
+                ## Defaults
+                * Change the *mode* option from *http* to *tcp* in *defaults* section
+                * Drop the settings that are only applicable to HTTP
+                
+                ```
+                defaults
+                  mode            tcp
+                  log             global
+                  option          tcplog
+                  option          dontlognull
+                  retries         3
+                  timeout queue   1m
+                  timeout connect 10s
+                  timeout client  1m
+                  timeout server  1m
+                  timeout check   10s
+                  maxconn         3000
+                ```
+              </section>
+              <section data-markdown>
+                ## Frontend
+                * For frontend, because HAProxy does not need to handle SSL, we just simply bind the port:
+                * For backend, keep as is.
+
+                ```
+                frontend https-in
+                  bind *:8443
+                  default_backend app
+                ```
+              </section>
+              <section data-markdown>
+                ## SSL Termination
+              </section>
+              <section data-markdown>
+                ## Prepare Certs and Key
+                * HAProxy uses a single file to hold private key, signed certificate, and any optionally intermediate CA certificates in PEM format.
+                * If your private key has passphrase, HAProxy will prompt you for it on each start and stop, which is not suitable for a daemon. So, we remove the passphrase from the key.
+              </section>
+              <section data-markdown>
+                ## Prepare Certs and Key
+                * Use the *openssl rsa* command to remove the passphrase from the key file.
+
+                ```shell
+                # openssl rsa -in private.key -out private-no-pass.key
+                ```
+                * Concatenate the certificate and key files together (in that order) as below:
+
+                ```shell
+                # cat cert.crt.pem private-no-pass.key | tee crt-key.pem
+                ```
+              </section>
+              <section data-markdown>
+                ## Set Base Dir for Certs and Key
+                * Add the base directories for your certs and key in *global* section as needed:
+
+                ```c
+                # default directory to fetch SSL CA certificates
+                ca-base /etc/certs
+                
+                # default directory to fetch SSL certifictes
+                crt-base /etc/certs
+                ```
+              </section>
+              <section data-markdown>
+                ## Frontend
+                * Configure an HTTPS endpoint.
+                * Use HTTPS(*ssl* directive) but not SSL 3.0(*no-sslv3* option) for security reason.
+                * Use *crt* directive to specifiy where to find the certificate bundle.
+
+                ```
+                frontend https-in
+                  bind *:8443     ssl no-sslv3 crt crt-key.pem
+                  default_backend app
+                ```
+              </section>
+              <section data-markdown>
+                ## Backend
+                * If the backend servers have SSL enabled, you need certs and key to talk to them at backend:
+
+                ```
+                backend app
+                  balance roundrobin
+                  server srv1 &lt;srv1_ip>:&lt;srv1_port> ssl ca-file ca.pem crt crt-key.pem
+                  server srv2 &lt;srv2_ip>:&lt;srv2_port> ssl ca-file ca.pem crt crt-key.pem
+                  server srv3 &lt;srv3_ip>:&lt;srv3_port> ssl ca-file ca.pem crt crt-key.pem
+                ```
+                * Otherwise, you don't have to configure ssl after server definitions.
+              </section>
+              <section data-markdown>
+                ## Enforce SSL
+                * If you want the site to be SSL-only, add *http-redirect* directive to *frontend* section.
+                * The *ssl_fc* condition indicates it will redirect from "http" to "https" if the connection was not made with an SSL connection.
+
+                ```
+                frontend http-in
+                  bind *:8080
+                  http-request replace-value Host (.*):8080 \1:8443
+                  http-request redirect scheme https if !{ ssl_fc }
+                ```
+              </section>
+              <section data-markdown>
+                ## Health Check
+                * To make sure the backend servers are healthy, configure HAProxy to check their health by periodically requesting a backend endpoint.
+              </section>
+              <section data-markdown>
+                ## General Settings
+                * *check* option: Add after each server definition to enable health check on each server.
+                * *log-health-checks* option: Enable health check logging.
+                * *inter* parameter: Set the interval between two consecutive health checks.
+                * *fall* parameter: Consider the server as dead after specified number of consecutive unsuccessful health checks.
+                * *rise* parameter: Consider the server as operational after specified number of consecutive successful health checks.
+
+                ```
+                backend app
+                  option  log-health-checks
+                  server  srv1 &lt;srv1_ip>:&lt;srv1_port> check inter 10s fall 3 rise 2
+                  server  srv2 &lt;srv2_ip>:&lt;srv2_port> check inter 10s fall 3 rise 2
+                  server  srv3 &lt;srv3_ip>:&lt;srv3_port> check inter 10s fall 3 rise 2
+                ```
+              </section>
+              <section data-markdown>
+                ## TCP Check
+                * Use *tcp-check* option to specify which TCP port on backend server will be used for health check
+
+                ```
+                backend app
+                  balance roundrobin
+                  option  tcp-check
+                  option  log-health-checks
+                  server  srv1 &lt;srv1_ip>:&lt;srv1_port> check port &lt;srv1_port2>
+                  server  srv2 &lt;srv2_ip>:&lt;srv2_port> check port &lt;srv2_port2>
+                  server  srv3 &lt;srv3_ip>:&lt;srv3_port> check port &lt;srv3_port2>
+                ```
+              </section>
+              <section data-markdown>
+                ## HTTP Check
+                * Use *httpchk* option to specify what service endpoint will be used for health check
+                * Use *ssl* directive with proper certificates for health check if backend servers are SSL enabled.
+
+                ```
+                backend app
+                  balance roundrobin
+                  option  httpchk GET /
+                  option  log-health-checks
+                  server  srv1 &lt;srv1_ip>:&lt;srv1_port> check ssl ca-file ca.pem crt crt-key.pem
+                  server  srv2 &lt;srv2_ip>:&lt;srv2_port> check ssl ca-file ca.pem crt crt-key.pem
+                  server  srv3 &lt;srv3_ip>:&lt;srv3_port> check ssl ca-file ca.pem crt crt-key.pem
+                ```
+              </section>
+            </section>
+            <section>
+              <section data-markdown>
+                ## HAProxy Verification
+              </section>
+              <section data-markdown>
+                * Let HAProxy validate the configuration file before we start:
+
+                ```shell
+                # haproxy -f /etc/haproxy/haproxy.cfg -c
+                ```
+                * Start the HAProxy service if there is no validation error found:
+
+                ```shell
+                # service haproxy start
+                ```
+                * Monitor logs by checking haproxy.log after HAProxy is started:
+                
+                ```shell
+                # tail -f /var/log/haproxy.log
+                ```
+                * You can also run HAProxy by disabling background mode to check logs in the same terminal right after it is started:
+
+                ```shell
+                # haproxy -f /etc/haproxy/haproxy.cfg -db
+                ```
+              </section>
+            </section>
+            <section>
+              <section data-markdown>
+                ## Keepalived Overview
+              </section>
+              <section data-markdown>
+                ## What is Keepalived
+                * A routing software written in C to provide simple and robust facilities for loadbalancing and high-availability to Linux based infrastructures
+                * Rely on Linux Virtual Server(IPVS) kernel module providing Layer4 loadbalancing.
+                * Implement a set of checkers to dynamically maintain and manage loadbalanced server pool according their health.
+                * Achieve high-availability by VRRP protocol.
+                * See: [LVS NAT + Keepalived HOWTO](http://www.keepalived.org/LVS-NAT-Keepalived-HOWTO.html)
+              </section>
+              <section data-markdown>
+                ## HAProxy with Keepalived
+                * To avoid the single point failure of HAProxy, multiple HAProxy instances can be configured in HA mode.
+                * Two HAProxy nodes in active-passive mode can monitor each other using Keepalived.
+                * Create a redundant pair of HAProxy servers by moving an IP address between HAProxy hosts.
+                * Slave becomes master if master fails, and client will not notice any service disruption.
+              </section>
+            </section>
+            <section>
+              <section data-markdown>
+                ## Keepalived Installation
+              </section>
+              <section data-markdown>
+                ## By Package Manager
+                * For most modern Linux distributions, HAProxy can be easily installed from the default base repository using default package manager.
+
+                ```shell
+                RedHat, CentOS, Fedora, etc.
+                # yum update
+                # yum install keepalived
+
+                Debian, Ubuntu, etc.
+                # apt-get update
+                # apt-get install keepalived
+                ```
+              </section>
+              <section data-markdown>
+                ## Validate
+                * To ensure where the Keepalived is installed, run below command:
+
+                ```shell
+                # which keepalived
+                /usr/sbin/keepalived
+                ```
+                * To ensure what the version of the installed Keepalived is, run below command:
+
+                ```shell
+                # keepalived -v
+                Keepalived v1.3.5 (03/19,2017), git commit v1.3.5-6-g6fa32f2
+                Copyright(C) 2001-2017 Alexandre Cassen, &lt;acassen@gmail.com>
+                ```
+              </section>
+              <section data-markdown>
+                ## Auto Start
+                * Configure Keepalived as a service that can be auto started after reboot.
+                * Instructions are the same as HAProxy.
+              </section>
+            </section>
+            <section>
+              <section data-markdown>
+                ## Keepalived Configuration
+              </section>
+              <section data-markdown>
+                ## Configure Shared IP
+                * Require multiple HAProxy nodes bound to a shared IP.
+                * A virtual IP, instead of being assigned to local device.
+
+                * To allow one HAProxy node assigned to the shared IP, add the following line to */etc/sysctl.conf*:
+
+                ```
+                net.ipv4.ip_nonlocal_bind=1
+                ```
+                * To enable the change, run below command to load the configuration:
+
+                ```shell
+                # sysctl -p
+                ```
+                * Not forget to configure on each machine installed both HAProxy and Keepalived.
+              </section>
+              <section data-markdown>
+                ## Backup keepalived.cfg
+                * Backup the original sample configuration file at */etc/keepalived*:
+
+                ```shell
+                # cp /etc/keepalived/keepalived.cfg{,.old}
+                ```
+              </section>
+              <section data-markdown>
+                ## Configure Master Node
+                * Choose one machine as master node to configure.
+                * Add below snippet to */etc/keepalived/keepalived.conf*:
+
+                ```
+                vrrp_instance VI_1 {
+                  state MASTER
+                  interface ens192
+                  virtual_router_id 51
+                  priority 101
+                  advert_int 1
+                  virtual_ipaddress {
+                    &lt;virtual_ip>
+                  }
+                }
+                ```
+              </section>
+              <section data-markdown>
+                ## Configure Master Node
+                * *vrrp_instance* section defines VRRP behavior to run on a specific network interface. Each VRRP instance is related to a unique interface.
+                * *interface* specifies the network interface to which the virtual IP is assigned. Can be different depending on system. To figure out the value, run below command:
+
+                ```shell
+                # ip addr show
+                ```
+                * *virtual_router_id* differentiate multiple instances of VRRP on the same NIC. Must be unique to each VRRP instance.
+                * *priority* must be higher on master node than backup node.
+                * *virtual_ipaddress* defines virtual ip shared among nodes.
+              </section>
+              <section data-markdown>
+                ## Configure Backup Node
+                * Add below snippet to */etc/keepalived/keepalived.conf*:
+
+                ```
+                vrrp_instance VI_1 {
+                  state BACKUP
+                  interface ens192
+                  virtual_router_id 51
+                  priority 100
+                  advert_int 1
+                  virtual_ipaddress {
+                    &lt;virtual_ip>
+                  }
+                }
+                ```
+                * The only difference with master node is *priority* to make it the passive, slave or hot-standby node.
+              </section>
+              <section data-markdown>
+                ## Health Check
+                * *vrrp_script* section defines script to check if HAProxy is running.
+                * Use *killall* with sig 0 to check the existence of HAProxy process.
+                * The positive weight means successes will add *weight* to the priority of all VRRP instances which monitor it.
+
+                ```
+                vrrp_script chk_haproxy {
+                  script "killall -0 haproxy"
+                  interval 2
+                  weight 2
+                }
+                vrrp_instance VI_1 {
+                  ...
+                  track_script {
+                    chk_haproxy
+                  }
+                }
+                ```
+              </section>
+              <section data-markdown>
+                ## Health Check
+                * Another way of checking HAProxy health
+
+                ```
+                vrrp_script chk_haproxy {
+                  script "pidof haproxy"
+                  interval 2
+                }
+                ```
+              </section>
+            </section>
+            <section>
+              <section data-markdown>
+                ## Keepalived Verification
+              </section>
+              <section data-markdown>
+                * Start the Keepalived service on both master and backup nodes:
+
+                ```shell
+                # service keepalived start
+                ```
+                * To check the virtual ip binding, run below command on both master and backup nodes:
+                
+                ```shell
+                # ip addr sh ens192
+                ```
+                * Will see something similer to below snippet on master node meaning master node is listening on the shared IP.
+                
+                ```shell
+                inet 9.112.244.23/24 brd 9.112.244.255 scope global ens192
+                   valid_lft forever preferred_lft forever
+                ```
+
+                * To monitor logs for Keepalived, check /var/log/messages:
+                ```shell
+                # tail -f /var/log/messages
+                ```
+              </section>
+            </section>
+            <section>
+              <section data-markdown>
+                ## More
+              </section>
+              <section data-markdown>
+                * [Keepalived Configuration Manual Page](http://www.keepalived.org/manpage.html)
+                * [Keepalived User Guide](http://www.keepalived.org/doc/)
+              </section>
+            </section>
+            <section data-markdown>
+              ## Thanks!
+            </section>
+        </div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+
+    <script>
+        // More info https://github.com/hakimel/reveal.js#configuration
+        Reveal.initialize({
+            history: true,
+            transition: 'convex',
+
+            // More info https://github.com/hakimel/reveal.js#dependencies
+            dependencies: [{
+                src: 'plugin/markdown/marked.js'
+            }, {
+                src: 'plugin/markdown/markdown.js'
+            }, {
+                src: 'plugin/notes/notes.js',
+                async: true
+            }, {
+                src: 'plugin/highlight/highlight.js',
+                async: true,
+                callback: function() {
+                    hljs.initHighlightingOnLoad();
+                }
+            }, {
+                src: 'plugin/zoom-js/zoom.js',
+                async: true
+            }]
+        });
+    </script>
+</body>
+
+</html>
