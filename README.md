@@ -2,7 +2,7 @@
 
 This is the lab project to demonstrate the use of HAProxy and Keepalived to set up highly available load balancing service.
 
-Below is the instructions on how to play the lab. You can find the online slides [here](http://morningspace.github.io/lab-load-balancing/docs/slides).
+Below is the instructions on how to play the lab. You can find the online slides [here](http://morningspace.github.io/lab-load-balancing/slides).
 
 ## Instructions
 
