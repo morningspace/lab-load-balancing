@@ -27,12 +27,16 @@
 <body>
     <div class="reveal">
         <div class="slides">
-            <section data-markdown>
-              ## Load Balancing Using
-              ## HAProxy and Keepalived
-              by Mo Ying
-
-              Sep, 2018
+            <section>
+              <h2>Load Balancing Using</h2>
+              <h2>HAProxy and Keepalived</h2>
+              <p><i>by MorningSpace</i></p>
+              <p><i>Sep, 2018</i></p>
+              <p><i><a href="https://git.io/fx3XN">morningspace.github.io</a></i></p>
+              <p>
+                <img src="https://morningspace.github.io/assets/images/qrcode-wechat.jpg" width="86px" />
+                <a href="http://i.youku.com/morningspace"><img src="https://morningspace.github.io/assets/images/qrcode-youku.png" width="86px" /></a>
+              </p>
             </section>
             <section>
               <section data-markdown>
@@ -147,7 +151,7 @@
                 ```
               </section>
               <section data-markdown>
-                ## Enable Logging
+                ## Enable Logging using UDP
                 * Open */etc/haproxy/haproxy.cfg* to ensure the following line is defined under *global* section.
 
                 ```
@@ -162,7 +166,7 @@
                 ```
               </section>
               <section data-markdown>
-                ## Enable Logging
+                ## Enable Logging using UDP
                 * Create *haproxy.conf* under */etc/rsyslog.d/* and append the following line to the file:
 
                 ```
@@ -242,12 +246,13 @@
                 
                 ```
                 listen stats
-                  bind 0.0.0.0:8081
+                  bind 0.0.0.0:8090
                   mode http
                   stats enable
+                  stats refresh 10s
+                  stats show-node
+                  stats auth haproxy:passw0rd
                   stats uri /haproxy/stats
-                  stats realm Haproxy\ Statistics
-                  stats auth haproxy:Passw0rd  
                 ```
               </section>
               <section data-markdown>
@@ -265,7 +270,6 @@
                   balance roundrobin
                   server  srv1 &lt;srv1_ip>:&lt;srv1_port>
                   server  srv2 &lt;srv2_ip>:&lt;srv2_port>
-                  server  srv3 &lt;srv3_ip>:&lt;srv3_port>
                 ```
               </section>
               <section data-markdown>
@@ -289,12 +293,10 @@
                 
                 ```
                 defaults
-                  mode            tcp
                   log             global
+                  mode            tcp
                   option          tcplog
                   option          dontlognull
-                  retries         3
-                  timeout queue   1m
                   timeout connect 10s
                   timeout client  1m
                   timeout server  1m
@@ -318,7 +320,7 @@
               </section>
               <section data-markdown>
                 ## Prepare Certs and Key
-                * HAProxy uses a single file to hold private key, signed certificate, and any optionally intermediate CA certificates in PEM format.
+                * HAProxy uses a single file to hold private key, signed certificate, and any optionally intermediate CA certificates in *PEM* format.
                 * If your private key has passphrase, HAProxy will prompt you for it on each start and stop, which is not suitable for a daemon. So, we remove the passphrase from the key.
               </section>
               <section data-markdown>
@@ -326,12 +328,12 @@
                 * Use the *openssl rsa* command to remove the passphrase from the key file.
 
                 ```shell
-                # openssl rsa -in private.key -out private-no-pass.key
+                # openssl rsa -in my.key -out my-no-pass.key
                 ```
                 * Concatenate the certificate and key files together (in that order) as below:
 
                 ```shell
-                # cat cert.crt.pem private-no-pass.key | tee crt-key.pem
+                # cat my.crt.pem my-no-pass.key | tee my-crt-key.pem
                 ```
               </section>
               <section data-markdown>
@@ -339,11 +341,9 @@
                 * Add the base directories for your certs and key in *global* section as needed:
 
                 ```c
-                # default directory to fetch SSL CA certificates
-                ca-base /etc/certs
-                
-                # default directory to fetch SSL certifictes
-                crt-base /etc/certs
+                # Default SSL material locations
+                ca-base /etc/ssl/certs
+                crt-base /etc/ssl/private
                 ```
               </section>
               <section data-markdown>
@@ -354,7 +354,7 @@
 
                 ```
                 frontend https-in
-                  bind *:8443     ssl no-sslv3 crt crt-key.pem
+                  bind *:8443     ssl no-sslv3 crt my-crt-key.pem
                   default_backend app
                 ```
               </section>
@@ -365,9 +365,8 @@
                 ```
                 backend app
                   balance roundrobin
-                  server srv1 &lt;srv1_ip>:&lt;srv1_port> ssl ca-file ca.pem crt crt-key.pem
-                  server srv2 &lt;srv2_ip>:&lt;srv2_port> ssl ca-file ca.pem crt crt-key.pem
-                  server srv3 &lt;srv3_ip>:&lt;srv3_port> ssl ca-file ca.pem crt crt-key.pem
+                  server srv1 &lt;srv1_ip>:&lt;srv1_port> ssl ca-file ca.pem crt my-crt-key.pem
+                  server srv2 &lt;srv2_ip>:&lt;srv2_port> ssl ca-file ca.pem crt my-crt-key.pem
                 ```
                 * Otherwise, you don't have to configure ssl after server definitions.
               </section>
@@ -400,7 +399,6 @@
                   option  log-health-checks
                   server  srv1 &lt;srv1_ip>:&lt;srv1_port> check inter 10s fall 3 rise 2
                   server  srv2 &lt;srv2_ip>:&lt;srv2_port> check inter 10s fall 3 rise 2
-                  server  srv3 &lt;srv3_ip>:&lt;srv3_port> check inter 10s fall 3 rise 2
                 ```
               </section>
               <section data-markdown>
@@ -414,7 +412,6 @@
                   option  log-health-checks
                   server  srv1 &lt;srv1_ip>:&lt;srv1_port> check port &lt;srv1_port2>
                   server  srv2 &lt;srv2_ip>:&lt;srv2_port> check port &lt;srv2_port2>
-                  server  srv3 &lt;srv3_ip>:&lt;srv3_port> check port &lt;srv3_port2>
                 ```
               </section>
               <section data-markdown>
@@ -425,11 +422,10 @@
                 ```
                 backend app
                   balance roundrobin
-                  option  httpchk GET /
+                  option  httpchk GET /healthz
                   option  log-health-checks
-                  server  srv1 &lt;srv1_ip>:&lt;srv1_port> check ssl ca-file ca.pem crt crt-key.pem
-                  server  srv2 &lt;srv2_ip>:&lt;srv2_port> check ssl ca-file ca.pem crt crt-key.pem
-                  server  srv3 &lt;srv3_ip>:&lt;srv3_port> check ssl ca-file ca.pem crt crt-key.pem
+                  server  srv1 &lt;srv1_ip>:&lt;srv1_port> check ssl ca-file ca.pem crt my-crt-key.pem
+                  server  srv2 &lt;srv2_ip>:&lt;srv2_port> check ssl ca-file ca.pem crt my-crt-key.pem
                 ```
               </section>
             </section>
@@ -539,11 +535,11 @@
                 ```shell
                 # sysctl -p
                 ```
-                * Not forget to configure on each machine installed both HAProxy and Keepalived.
+                * Do not forget to configure on each machine installed both HAProxy and Keepalived.
               </section>
               <section data-markdown>
                 ## Backup keepalived.cfg
-                * Backup the original sample configuration file at */etc/keepalived*:
+                * Backup the original sample configuration file at */etc/keepalived* if there is one:
 
                 ```shell
                 # cp /etc/keepalived/keepalived.cfg{,.old}
@@ -557,12 +553,12 @@
                 ```
                 vrrp_instance VI_1 {
                   state MASTER
-                  interface ens192
+                  interface &lt;your_network_interface>
                   virtual_router_id 51
                   priority 101
                   advert_int 1
                   virtual_ipaddress {
-                    &lt;virtual_ip>
+                    &lt;your_virtual_ip>
                   }
                 }
                 ```
@@ -586,16 +582,16 @@
                 ```
                 vrrp_instance VI_1 {
                   state BACKUP
-                  interface ens192
+                  interface &lt;your_network_interface>
                   virtual_router_id 51
                   priority 100
                   advert_int 1
                   virtual_ipaddress {
-                    &lt;virtual_ip>
+                    &lt;your_virtual_ip>
                   }
                 }
                 ```
-                * The only difference with master node is *priority* to make it the passive, slave or hot-standby node.
+                * The only difference with master node is the *state* and the *priority* to make it the passive, slave or hot-standby node.
               </section>
               <section data-markdown>
                 ## Health Check
@@ -619,12 +615,20 @@
               </section>
               <section data-markdown>
                 ## Health Check
-                * Another way of checking HAProxy health
+                * Other ways to check HAProxy health. For example:
 
                 ```
                 vrrp_script chk_haproxy {
                   script "pidof haproxy"
                   interval 2
+                  weight 2
+                }
+                ```
+                ```
+                vrrp_script chk_haproxy {
+                  script "pgrep haproxy"
+                  interval 2
+                  weight 2
                 }
                 ```
               </section>
@@ -642,18 +646,19 @@
                 * To check the virtual ip binding, run below command on both master and backup nodes:
                 
                 ```shell
-                # ip addr sh ens192
+                # ip addr sh &lt;your_network_interface>
                 ```
                 * Will see something similer to below snippet on master node meaning master node is listening on the shared IP.
                 
                 ```shell
-                inet 9.112.244.23/24 brd 9.112.244.255 scope global ens192
+                inet 172.18.0.6/32 scope global eth0
                    valid_lft forever preferred_lft forever
                 ```
 
-                * To monitor logs for Keepalived, check /var/log/messages:
+                * Monitor Keepalived logs by checking log file *syslog* or *messages* in */var/log*:
+
                 ```shell
-                # tail -f /var/log/messages
+                # tail -f /var/log/syslog
                 ```
               </section>
             </section>
@@ -662,8 +667,12 @@
                 ## More
               </section>
               <section data-markdown>
+                ## More Materials
+                * [An Introduction to HAproxy and Load Balancing Concepts](https://www.digitalocean.com/community/tutorials/an-introduction-to-haproxy-and-load-balancing-concepts)
+                * [HAProxy Configuration Manual](http://cbonte.github.io/haproxy-dconv/1.8/configuration.html)
                 * [Keepalived Configuration Manual Page](http://www.keepalived.org/manpage.html)
                 * [Keepalived User Guide](http://www.keepalived.org/doc/)
+                * [Lab: Load Balancing Using HAProxy and Keepalived](https://github.com/morningspace/lab-load-balancing)
               </section>
             </section>
             <section data-markdown>

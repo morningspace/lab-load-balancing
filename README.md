@@ -1,129 +1,135 @@
 # Lab: Load Balancing Using HAProxy and Keepalived
 
-This is the lab project to demonstrate the use of HAProxy and Keepalived to set up highly available load balancing service.
+This is the lab project to demonstrate how to set up highly available load balancing service using HAProxy and Keepalived.
 
-Below is the instructions on how to play the lab. You can find the online slides [here](http://morningspace.github.io/lab-load-balancing/slides).
+This lab project is entirely based on Docker technology. You can play all the work in a sandbox at your local, which is composed by a few Docker containers.
+
+Please check the below instructions to learn how to play the work. You can also find the online slides [here](http://morningspace.github.io/lab-load-balancing/slides).
 
 ## Instructions
 
-### Build images
+### Build Docker Images
 
-Go root directory of this project, and build docker images for both web server and load balancer:
-```
+Go to the project root directory, and build docker images for both web server and load balancer:
+```shell
 docker build -f docker/Dockerfile.web -t morningspace/web .
 docker build -f docker/Dockerfile.lb -t morningspace/lb .
 ```
 
-### Launch web servers
+### Launch Web Servers
 
-Launch two docker containers for image morningspace/web to represent as two web server instances:
+Launch two docker containers for the image `morningspace/web` as web servers:
 ```
 docker run -d --name myweb1 --hostname myweb1 --net=lab -p 18080:80 -p 18443:443 morningspace/web
 docker run -d --name myweb2 --hostname myweb2 --net=lab -p 19080:80 -p 19443:443 morningspace/web
 ```
 
-Note:
+> Note:
+> * Make sure the network `lab` has been created beforehand.
 
-* Make sure the `lab` network has been created beforehand.
+Run `docker ps` to verify the docker containers are launched successfully.
 
-Run `docker ps` to make sure the two docker containers are launched successfully, and input below URLs in browser:
+Input below URLs in browser to verify it returns expected messages:
 ```
 http://localhost:18080/healthz
 http://localhost:19080/healthz
 https://localhost:18443/healthz
 https://localhost:19443/healthz
 ```
-It should return a message such as "Greeting from <hostname>", where the `hostname` is specified by `--hostname` option when launch the docker container.
+The returned message looks like `Greeting from <hostname>`, where the `hostname` is the value specified by `--hostname` option when launch the docker container.
 
-### Launch load balancers
+### Launch Load Balancers
 
-Launch two docker containers for image morningspace/lb to represent as two load balancer instances:
+Launch two docker containers for the image `morningspace/lb` as load balancers:
 ```
 docker run -it --name mylb1 --hostname mylb1 --net=lab -p 28080:8080 -p 28443:8443 -p 28090:8090 --sysctl net.ipv4.ip_nonlocal_bind=1 --privileged morningspace/lb
 docker run -it --name mylb2 --hostname mylb2 --net=lab -p 29080:8080 -p 29443:8443 -p 29090:8090 --sysctl net.ipv4.ip_nonlocal_bind=1 --privileged morningspace/lb
 ```
 
-Run `docker ps` to make sure the two docker containers are launched successfully.
+Run `docker ps` to verify the docker containers are launched successfully.
 
-### Configure and run haproxy
+### Configure and Run HAProxy
 
-After launched, you should be in the container. Make sure haproxy has not been started:
+After the load balancer container is launched, it will take you into the container. Make sure haproxy has not been started:
 ```
 service haproxy status
 ```
-It should return something like: haproxy not running
+It should return something as below:
+```
+haproxy not running
+```
 
-Go to directory /etc/haproxy, there are multiple sample configuration files for haproxy. Copy either of them to be haproxy.cfg.
+Go to the directory `/etc/haproxy`, where there are sample configuration files for haproxy. Copy one of them to replace `haproxy.cfg`, e.g.
 ```
 cp haproxy-ssl-termination.conf haproxy.cfg
 ```
 
-Start haproxy as service:
+Start haproxy as a service:
 ```
 service haproxy start
 ```
 
-Check if haproxy is started successfully by monitoring its logs:
+Verify haproxy started successfully by monitoring logs:
 ```
 tail -f /var/log/haproxy.log
 ```
 
-Input below URLs in browser to open the haproxy stats report views:
+Input below URLs in browser to open the haproxy statistics report view:
 ```
 http://localhost:28090/haproxy/stats
 http://localhost:29090/haproxy/stats
 ```
-Input the predefined username and password when promted: haproxy/passw0rd
+Input the predefined username and password, haproxy/passw0rd, when promted.
 
-Repeat the same steps in another haproxy instance.
+Repeat the same steps in the other load balancer container.
 
-Note:
+> Note:
+>
+> * If you forget which load balancer container you are in, type `hostname` in the container.
+> * If you exit the container for some reason, the container will be stopped as expected. To go back, e.g. `mylb1`, run below command:
+> ```
+> docker start -i mylb1
+> ```
 
-* If you forget which haproxy instance you are in, type `hostname` within container.
-* If you exit the container for some reason, the container will be stopped as expected. To go back, e.g. mylb1:
-```
-docker start -i mylb1
-```
+### Configure and Run Keepalived 
 
-### Configure and run keepalived 
+Go to the directory `/etc/keepalived`, where there are two sample configuration files for keepalived. One is for master node, and the other one is for backup node.
 
-Go to directory /etc/keepalived, there are two sample configuration files for keepalived. One for is master node, and the other one is for backup node.
-
-Run ping command to get the ip addresses for all containers involved into the current network, then use a new ip address as the virtual ip address that will not conflict with all the other ones. e.g.:
-node		| ip address
+Run `ping` command to get all the IP addresses for the containers involved in the current network, then use a new IP address as the virtual IP address that does not conflict with others, e.g.:
+Node		| IP Address
 -------	| -------------
 myweb1	| 172.18.0.2
 myweb2	| 172.18.0.3
 mylb1		| 172.18.0.4
 mylb2		| 172.18.0.5
-virtual	| 172.18.0.6
-Here we use 172.18.0.6 as the virtual ip address. Replace `<your_virtual_ip>` with the selected value in both keepalived-master.conf and keepalived-backup.conf.
+virtual*| 172.18.0.6
+Here we use 172.18.0.6 as the virtual IP address. Replace `<your_virtual_ip>` with the actual value in both `keepalived-master.conf` and `keepalived-backup.conf`.
 
-Note:
-* The value of `interface` defined in sample configuration files is `eth0`. It could be different depending on your system. To figure out the right value, you can run `ip addr show`.
+> Note:
+> * The value of `interface` defined in sample configuration files is `eth0`. It could be different depending on your system. To figure out the right value, you can run `ip addr show`.
 
-Choose one container as master, e.g. mylb1. Launch keepalived using master configuration:
+Choose one load balancer container as master, e.g. `mylb1`. Launch keepalived on master using master configuration:
 ```
 keepalived --dump-conf --log-console --log-detail --log-facility 7 --vrrp -f /etc/keepalived/keepalived-master.conf
 ```
 
-In onther container, e.g. mylb2 as backup. Launch keepalived using backup configuration:
+In backup container, launch keepalived using backup configuration:
 ```
 keepalived --dump-conf --log-console --log-detail --log-facility 7 --vrrp -f /etc/keepalived/keepalived-backup.conf
 ```
 
-Check if keepalived is started successfully by monitoring its logs:
+Verify keepalived started successfully by monitoring logs:
 ```
 tail -f /var/log/syslog
 ```
 
-To verify if the virtual ip address is assigned successfully:
+Verify the virtual IP address is assigned successfully, run below command on master:
 ```
 ip addr show eth0
 ```
-If it's configured correctly, you will see the virtual ip address appeared in the output.
+If configured correctly, you will see the virtual IP address appeared in the output.
 
-Run `curl` in either of the two load balancer containers. Send request to the virutal ip and see if it returns the content from web servers. e.g. for the case where ssl is not enabled:
+Run `curl` in either of the two load balancer containers. Send request to the virutal IP and see if it returns the content retrieved from web servers, e.g. in the case where ssl is not enabled:
 ```
 curl -XGET http://<virtual_ip>:8080/healthz
 ```
@@ -134,55 +140,53 @@ curl --insecure --cert /etc/ssl/certs/my.crt --key /etc/ssl/private/my.key -XGET
 
 ## Test
 
-
-### Web server
+### Web Server
 
 Try to stop one of the web servers, e.g.:
 ```
 docker stop myweb1
 ```
 
-Wait for a moment then check the haproxy stats report view in browser, e.g. use the below URL:
+Wait for a moment then check the haproxy statistics report in browser, e.g. use the below URL, to see if `myweb1` is down:
 ```
 http://localhost:28090/haproxy/stats
 ```
-To see if myweb1 is down.
 
-Hit the /healthz endpoint exposed by load balancer either in browser or using curl command, and make sure myweb1 will never be hitted.
+Hit the `/healthz` endpoint exposed by load balancer either in browser or using `curl`. Make sure `myweb1` will never be hit.
 
-Start myweb1 again:
+Start `myweb1` again:
 ```
 docker start myweb1
 ```
 
-Wait for a moment and check the haproxy stats report view in browser to see if myweb1 is up.
+Wait for a moment then check the haproxy statistics report in browser to see if `myweb1` is up.
 
-Hit the /healthz endpoint again, and make sure both myweb1 and myweb2 will be hitted.
+Hit the `/healthz` endpoint again. Make sure both `myweb1` and `myweb2` will be hit.
 
 ### Load balancer
 
-Try to stop the master haproxy service within the container, e.g. mylb1.
+Try to stop the master haproxy service within the container, e.g. `mylb1`.
 ```
 service haproxy stop
 ```
 
-Wait for a moment then check the keepalived logs by monitoring /var/log/syslog in both containers, to see if mylb1 has entered BACKUP state, and mylb2 transitioned to MASTER state.
+Wait for a moment then check the keepalived logs by monitoring `/var/log/syslog` in both load balancer containers. See if `mylb1` entered into `BACKUP` state, and `mylb2` transitioned to `MASTER` state.
 
-You can also verify by typing in both containers:
+You can also verify it using `ip` command in both containers:
 ```
 ip addr show eth0
 ```
-If it works correctly, you will see the virtual ip address appeared in the output in container mylb2 rather than container mylb1.
+If it works correctly, you will see the virtual IP address appeared in the output in container `mylb2` instead of container `mylb1`.
 
-Run `curl` in either of the two load balancer containers. Send request to the virutal ip and see if it still returns the content from web servers.
+Run `curl` in either of the two load balancer containers. Send request to the virutal IP and see if it still returns the content retrieved from web servers.
 
-Start mylb1 again:
+Start `mylb1` again:
 ```
 service haproxy start
 ```
 
-Wait for a moment then check the keepalived logs, to see if mylb1 gained MASTER state, and mylb2 returned back to BACKUP state.
+Wait for a moment then check the keepalived logs. See if `mylb1` gained `MASTER` state, and `mylb2` returned back to `BACKUP` state.
 
-You can also verify by `ip addr` command, to see if the virtual ip address appeared in the output in container mylb1 again.
+You can also verify it using `ip` command in both containers, to see if the virtual IP address appeared in the output in container `mylb1` instead of container `mylb2`.
 
-Run `curl` in either of the two load balancer containers. Send request to the virutal ip and see if it still returns the content from web servers.
+Run `curl` in either of the two load balancer containers. Send request to the virutal IP and see if it still returns the content retrieved from web servers.
