@@ -1,10 +1,20 @@
 # Lab: Load Balancing Using HAProxy and Keepalived
 
+## Overview
+
 This is the lab project to demonstrate how to set up highly available load balancing service using HAProxy and Keepalived.
 
 This lab project is entirely based on Docker technology. You can play all the work in a sandbox at your local, which is composed by a few Docker containers.
 
-Please check the below instructions to learn how to play the work. You can also find the online slides [here](http://morningspace.github.io/lab-load-balancing/slides).
+As the figure depicted, there are two web servers, `myweb1` and `myweb2`, which are the containers built from the image `morningspace/web`. It uses nginx serving as web server. Both HTTP and HTTPS are supported.
+
+In front of the web servers, there are two load balancers, `mylb1` and `mhylb2`, which are the containers built from the image `morningspace/lb`. It installs both haproxy and keepalived. The haproxy connects to the two web servers, while keepalived is to check whether haproxy is available or not. We define `mylb` as master node, and `mylb2` as backup node to support haproxy failover. It also exposes a virutal IP that can be accessed by client.
+
+![](docs/images/architecture.png)
+
+Please check the below instructions to learn how to play it.
+
+You can also find the online slides [here](http://morningspace.github.io/lab-load-balancing/slides).
 
 ## Instructions
 
