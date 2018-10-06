@@ -1,6 +1,6 @@
 # Lab: Load Balancing Using HAProxy and Keepalived
 
-This is the lab project to demonstrate how to set up highly available load balancing service using HAProxy and Keepalived.
+This is the lab project to demonstrate how to set up highly available load balancing service using HAProxy and Keepalived.
 
 This lab project is entirely based on Docker technology. You can play all the work in a sandbox at your local, which is composed by a few Docker containers.
 
@@ -24,8 +24,8 @@ docker run -d --name myweb1 --hostname myweb1 --net=lab -p 18080:80 -p 18443:443
 docker run -d --name myweb2 --hostname myweb2 --net=lab -p 19080:80 -p 19443:443 morningspace/web
 ```
 
-> Note:
-> * Make sure the network `lab` has been created beforehand.
+Note:
+* Make sure the network `lab` has been created beforehand.
 
 Run `docker ps` to verify the docker containers are launched successfully.
 
@@ -83,19 +83,19 @@ Input the predefined username and password, haproxy/passw0rd, when promted.
 
 Repeat the same steps in the other load balancer container.
 
-> Note:
->
-> * If you forget which load balancer container you are in, type `hostname` in the container.
-> * If you exit the container for some reason, the container will be stopped as expected. To go back, e.g. `mylb1`, run below command:
-> ```
-> docker start -i mylb1
-> ```
+Note:
+* If you forget which load balancer container you are in, type `hostname` in the container.
+* If you exit the container for some reason, the container will be stopped as expected. To go back, e.g. `mylb1`, run below command:
+```
+docker start -i mylb1
+```
 
 ### Configure and Run Keepalived 
 
 Go to the directory `/etc/keepalived`, where there are two sample configuration files for keepalived. One is for master node, and the other one is for backup node.
 
 Run `ping` command to get all the IP addresses for the containers involved in the current network, then use a new IP address as the virtual IP address that does not conflict with others, e.g.:
+
 Node		| IP Address
 -------	| -------------
 myweb1	| 172.18.0.2
@@ -103,10 +103,11 @@ myweb2	| 172.18.0.3
 mylb1		| 172.18.0.4
 mylb2		| 172.18.0.5
 virtual*| 172.18.0.6
+
 Here we use 172.18.0.6 as the virtual IP address. Replace `<your_virtual_ip>` with the actual value in both `keepalived-master.conf` and `keepalived-backup.conf`.
 
-> Note:
-> * The value of `interface` defined in sample configuration files is `eth0`. It could be different depending on your system. To figure out the right value, you can run `ip addr show`.
+Note:
+* The value of `interface` defined in sample configuration files is `eth0`. It could be different depending on your system. To figure out the right value, you can run `ip addr show`.
 
 Choose one load balancer container as master, e.g. `mylb1`. Launch keepalived on master using master configuration:
 ```
