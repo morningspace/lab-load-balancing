@@ -18,12 +18,18 @@ You can also find the online slides [here](http://morningspace.github.io/lab-loa
 
 ## Instructions
 
-### Build Docker Images
+### Build or Pull Docker Images
 
 Go to the project root directory, and build docker images for both web server and load balancer:
 ```shell
 docker build -f docker/Dockerfile.web -t morningspace/lab-web .
 docker build -f docker/Dockerfile.lb -t morningspace/lab-lb .
+```
+
+The docker images have also been pushed to Docker Hub. So, you can also pull them from there.
+```
+docker pull morningspace/lab-lb
+docker pull morningspace/lab-web
 ```
 
 ### Launch Web Servers
