@@ -6,9 +6,9 @@ This is the lab project to demonstrate how to set up highly available load balan
 
 This lab project is entirely based on Docker technology. You can play all the work in a sandbox at your local, which is composed by a few Docker containers.
 
-As the figure depicted, there are two web servers, `myweb1` and `myweb2`, which are the containers built from the image `morningspace/web`. It uses nginx serving as web server. Both HTTP and HTTPS are supported.
+As the figure depicted, there are two web servers, `myweb1` and `myweb2`, which are the containers built from the image `morningspace/lab-web`. It uses nginx serving as web server. Both HTTP and HTTPS are supported.
 
-In front of the web servers, there are two load balancers, `mylb1` and `mhylb2`, which are the containers built from the image `morningspace/lb`. It installs both haproxy and keepalived. The haproxy connects to the two web servers, while keepalived is to check whether haproxy is available or not. We define `mylb` as master node, and `mylb2` as backup node to support haproxy failover. It also exposes a virutal IP that can be accessed by client.
+In front of the web servers, there are two load balancers, `mylb1` and `mhylb2`, which are the containers built from the image `morningspace/lab-lb`. It installs both haproxy and keepalived. The haproxy connects to the two web servers, while keepalived is to check whether haproxy is available or not. We define `mylb` as master node, and `mylb2` as backup node to support haproxy failover. It also exposes a virutal IP that can be accessed by client.
 
 ![](docs/images/architecture.png)
 
@@ -22,16 +22,16 @@ You can also find the online slides [here](http://morningspace.github.io/lab-loa
 
 Go to the project root directory, and build docker images for both web server and load balancer:
 ```shell
-docker build -f docker/Dockerfile.web -t morningspace/web .
-docker build -f docker/Dockerfile.lb -t morningspace/lb .
+docker build -f docker/Dockerfile.web -t morningspace/lab-web .
+docker build -f docker/Dockerfile.lb -t morningspace/lab-lb .
 ```
 
 ### Launch Web Servers
 
-Launch two docker containers for the image `morningspace/web` as web servers:
+Launch two docker containers for the image `morningspace/lab-web` as web servers:
 ```
-docker run -d --name myweb1 --hostname myweb1 --net=lab -p 18080:80 -p 18443:443 morningspace/web
-docker run -d --name myweb2 --hostname myweb2 --net=lab -p 19080:80 -p 19443:443 morningspace/web
+docker run -d --name myweb1 --hostname myweb1 --net=lab -p 18080:80 -p 18443:443 morningspace/lab-web
+docker run -d --name myweb2 --hostname myweb2 --net=lab -p 19080:80 -p 19443:443 morningspace/lab-web
 ```
 
 Note:
@@ -50,10 +50,10 @@ The returned message looks like `Greeting from <hostname>`, where the `hostname`
 
 ### Launch Load Balancers
 
-Launch two docker containers for the image `morningspace/lb` as load balancers:
+Launch two docker containers for the image `morningspace/lab-lb` as load balancers:
 ```
-docker run -it --name mylb1 --hostname mylb1 --net=lab -p 28080:8080 -p 28443:8443 -p 28090:8090 --sysctl net.ipv4.ip_nonlocal_bind=1 --privileged morningspace/lb
-docker run -it --name mylb2 --hostname mylb2 --net=lab -p 29080:8080 -p 29443:8443 -p 29090:8090 --sysctl net.ipv4.ip_nonlocal_bind=1 --privileged morningspace/lb
+docker run -it --name mylb1 --hostname mylb1 --net=lab -p 28080:8080 -p 28443:8443 -p 28090:8090 --sysctl net.ipv4.ip_nonlocal_bind=1 --privileged morningspace/lab-lb
+docker run -it --name mylb2 --hostname mylb2 --net=lab -p 29080:8080 -p 29443:8443 -p 29090:8090 --sysctl net.ipv4.ip_nonlocal_bind=1 --privileged morningspace/lab-lb
 ```
 
 Run `docker ps` to verify the docker containers are launched successfully.
