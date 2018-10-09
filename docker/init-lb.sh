@@ -1,7 +1,9 @@
 #!/bin/sh
 set -e
 
-sed -i.bak 's/^\(module.*imklog.*\)/# \1/g' /etc/rsyslog.conf
+echo Howdy! Welcome to MorningSpace Lab: Load Balancing
+echo
+
 service rsyslog start
 
 exec "$@"

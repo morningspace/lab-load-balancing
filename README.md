@@ -1,7 +1,8 @@
 ## MorningSpace Lab
+
 ![](https://morningspace.github.io/assets/images/banner.jpg)
 
-# Load Balancing Using HAProxy and Keepalived
+# Load Balancing
 
 Keywords: HAProxy, Keepalived, Docker, SSL, nginx, Load Balance
 

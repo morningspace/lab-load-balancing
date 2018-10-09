@@ -7,6 +7,8 @@ RUN apt-get update && \
     vim inetutils-ping iproute2 curl rsyslog haproxy keepalived && \
     rm -rf /var/lib/apt/lists/*
 
+RUN sed -i 's/^\(module.*imklog.*\)/# \1/g' /etc/rsyslog.conf
+
 COPY ./docker/init-lb.sh /
 COPY ./conf/ssl /etc/ssl/
 COPY ./conf/samples/haproxy /etc/haproxy
