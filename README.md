@@ -1,8 +1,8 @@
 ## MorningSpace Lab
 
-![](https://morningspace.github.io/assets/images/banner.jpg)
+[![](https://morningspace.github.io/assets/images/banner.jpg)](https://morningspace.github.io)
 
-# Load Balancing
+# A Taste of Load Balancing
 
 Keywords: HAProxy, Keepalived, Docker, SSL, nginx, Load Balance
 
@@ -10,17 +10,19 @@ Keywords: HAProxy, Keepalived, Docker, SSL, nginx, Load Balance
 
 This is the lab project to demonstrate how to set up highly available load balancing service using HAProxy and Keepalived.
 
-This lab project is entirely based on Docker technology. You can play all the work in a sandbox at your local, which is composed by a few Docker containers.
+This lab project is entirely based on Docker technology. You can play it in a sandbox at your local, which is composed by a few Docker containers.
 
-As the figure depicted, there are two web servers, `myweb1` and `myweb2`, which are the containers built from the image `morningspace/lab-web`. It uses nginx serving as web server. Both HTTP and HTTPS are supported.
+As the figure depicted below, there are two web servers, `myweb1` and `myweb2`, which are the containers built from the image `morningspace/lab-web`. It uses nginx serving as web server. Both HTTP and HTTPS are enabled.
 
-In front of the web servers, there are two load balancers, `mylb1` and `mhylb2`, which are the containers built from the image `morningspace/lab-lb`. It installs both haproxy and keepalived. The haproxy connects to the two web servers, while keepalived is to check whether haproxy is available or not. We define `mylb` as master node, and `mylb2` as backup node to support haproxy failover. It also exposes a virutal IP that can be accessed by client.
+In front of the web servers, there are two load balancers, `mylb1` and `mhylb2`, which are the containers built from the image `morningspace/lab-lb`. Both haproxy and keepalived are installed. The haproxy connects to the two web servers, while keepalived is to check whether haproxy is available or not. We define `mylb` as master node, and `mylb2` as backup node to support haproxy failover. It also exposes a virutal IP that can be accessed by client.
 
 ![](docs/images/architecture.png)
 
 Please check the below instructions to learn how to play it.
 
-You can also find the online slides [here](http://morningspace.github.io/lab-load-balancing/slides).
+You can also find the online slides [here](https://morningspace.github.io/lab-load-balancing/slides).
+
+For more lab projects from MorningSpace Lab, please check [morningspace.github.io](https://morningspace.github.io).
 
 ## Instructions
 
@@ -28,8 +30,8 @@ You can also find the online slides [here](http://morningspace.github.io/lab-loa
 
 Go to the project root directory, and build docker images for both web server and load balancer:
 ```shell
-docker build -f docker/Dockerfile.web -t morningspace/lab-web .
-docker build -f docker/Dockerfile.lb -t morningspace/lab-lb .
+docker build -f docker/web/Dockerfile -t morningspace/lab-web .
+docker build -f docker/lb/Dockerfile -t morningspace/lab-lb .
 ```
 
 The docker images have also been pushed to Docker Hub. So, you can also pull them from there.
@@ -47,7 +49,10 @@ docker run -d --name myweb2 --hostname myweb2 --net=lab -p 19080:80 -p 19443:443
 ```
 
 Note:
-* Make sure the network `lab` has been created beforehand.
+* Make sure the network `lab` has been created beforehand by running below command:
+```
+docker network create lab
+```
 
 Run `docker ps` to verify the docker containers are launched successfully.
 
