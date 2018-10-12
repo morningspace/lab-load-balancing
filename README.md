@@ -1,5 +1,7 @@
 ## MorningSpace Lab
 
+晴耕实验室
+
 [![](https://morningspace.github.io/assets/images/banner.jpg)](https://morningspace.github.io)
 
 # A Taste of Load Balancing
@@ -18,7 +20,7 @@ In front of the web servers, there are two load balancers, `mylb1` and `mhylb2`,
 
 ![](docs/images/architecture.png)
 
-Please check the below instructions to learn how to play it.
+Please check the below instructions to learn how to play with it.
 
 You can also find the online slides [here](https://morningspace.github.io/lab-load-balancing/slides).
 
@@ -34,7 +36,7 @@ docker build -f docker/web/Dockerfile -t morningspace/lab-web .
 docker build -f docker/lb/Dockerfile -t morningspace/lab-lb .
 ```
 
-The docker images have also been pushed to Docker Hub. So, you can also pull them from there.
+The docker images have also been pushed to Docker Hub. So, you can pull them from there too.
 ```
 docker pull morningspace/lab-lb
 docker pull morningspace/lab-web
