@@ -369,8 +369,8 @@
               </section>
               <section data-markdown>
                 ## Enforce SSL
-                * If you want the site to be SSL-only, add *http-redirect* directive to *frontend* section.
-                * The *ssl_fc* condition indicates it will redirect from "http" to "https" if the connection was not made with an SSL connection.
+                * If you want the site to be SSL-only, add *http-request redirect* to *frontend* section.
+                * The *ssl_fc* condition indicates it will redirect from "http" to "https" if the front connection was not made with an SSL connection.
 
                 ```
                 frontend http-in
