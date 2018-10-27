@@ -123,7 +123,13 @@ docker start -i mylb1
 
 Go to the directory `/etc/keepalived`, where there are two sample configuration files for keepalived. One is for master node, and the other one is for backup node.
 
-Run `ping` command to get all the IP addresses for the containers involved in the current network, then use a new IP address as the virtual IP address that does not conflict with others, e.g.:
+Run `ping` command in container, or below command on host machine to get all the IP addresses for the containers involved in the current network:
+
+```
+docker inspect -f '{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -q)
+```
+
+Then use a new IP address as the virtual IP address that does not conflict with others, e.g.:
 
 Node		| IP Address
 -------	| -------------
