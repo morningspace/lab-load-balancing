@@ -4,7 +4,7 @@
 
 [![](https://morningspace.github.io/assets/images/banner.jpg)](https://morningspace.github.io)
 
-# A Taste of Load Balancing
+# HAProxy + Keepalived: Build Your Load Balancer in 30 Minutes!
 
 Keywords: HAProxy, Keepalived, Docker, SSL, nginx, Load Balance
 
