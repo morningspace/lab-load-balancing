@@ -29,8 +29,9 @@
         <div class="slides">
             <section>
               <p><i>MorningSpace Lab</i></p>
-              <h2>Load Balancing Using</h2>
-              <h2>HAProxy and Keepalived</h2>
+              <h3><i>HAProxy + Keepalived</i></h3>
+              <h2>Build Your Load Balancer</h2>
+              <h3><i>in 30 Minutes</i></h3>
               <p><i>by MorningSpace</i></p>
               <p><i>Sep, 2018</i></p>
             </section>
@@ -369,8 +370,8 @@
               </section>
               <section data-markdown>
                 ## Enforce SSL
-                * If you want the site to be SSL-only, add *http-redirect* directive to *frontend* section.
-                * The *ssl_fc* condition indicates it will redirect from "http" to "https" if the connection was not made with an SSL connection.
+                * If you want the site to be SSL-only, add *http-request redirect* to *frontend* section.
+                * The *ssl_fc* condition indicates it will redirect from "http" to "https" if the front connection was not made with an SSL connection.
 
                 ```
                 frontend http-in
@@ -460,9 +461,9 @@
               <section data-markdown>
                 ## What is Keepalived
                 * A routing software written in C to provide simple and robust facilities for loadbalancing and high-availability to Linux based infrastructures
-                * Rely on Linux Virtual Server(IPVS) kernel module providing Layer4 loadbalancing.
+                * Rely on Linux Virtual Server(LVS) kernel module providing Layer4 loadbalancing.
                 * Implement a set of checkers to dynamically maintain and manage loadbalanced server pool according their health.
-                * Achieve high-availability by VRRP protocol.
+                * Achieve high-availability by VRRP(Virtual Router Redundancy) protocol.
                 * See: [LVS NAT + Keepalived HOWTO](http://www.keepalived.org/LVS-NAT-Keepalived-HOWTO.html)
               </section>
               <section data-markdown>
