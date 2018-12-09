@@ -8,6 +8,8 @@
 
 Keywords: HAProxy, Keepalived, Docker, SSL, nginx, Load Balance
 
+Videos: Check the [video](https://youtu.be/jzXzUojGneA) that helps you lively walk through the instructions on how to play this lab project. More videos on this lab project can be found [here](http://v.youku.com/v_show/id_XMzkyNTAzODg3Ng==.html?f=51967588).
+
 ## Overview
 
 This is the lab project to demonstrate how to set up highly available load balancing service using HAProxy and Keepalived.
@@ -20,7 +22,7 @@ In front of the web servers, there are two load balancers, `mylb1` and `mhylb2`,
 
 ![](docs/images/architecture.png)
 
-Please check the below instructions to learn how to play with it and a [video](https://youtu.be/jzXzUojGneA) that helps you lively walk through the instructions.
+Please check the below instructions to learn how to play with it.
 
 You can also find the online slides [here](https://morningspace.github.io/lab-load-balancing/slides).
 
