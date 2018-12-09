@@ -20,7 +20,7 @@ In front of the web servers, there are two load balancers, `mylb1` and `mhylb2`,
 
 ![](docs/images/architecture.png)
 
-Please check the below instructions to learn how to play with it.
+Please check the below instructions to learn how to play with it and a [video](https://youtu.be/jzXzUojGneA) that helps you lively walk through the instructions.
 
 You can also find the online slides [here](https://morningspace.github.io/lab-load-balancing/slides).
 
